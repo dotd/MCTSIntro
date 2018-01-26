@@ -4,12 +4,12 @@ import numpy as np
 import copy
 import time
 
-mdp = MDPSimulator.generate_investment_sim()
-mu = MDPSimulator.generate_uniform_policy(mdp.X, mdp.U)
-gamma = 0.5
-num_samples = 10000
-print(mdp.show())
 
+mdp = MDPSimulator.generate_random_MDP(X=5,U=3,B=5,R_sparse=5,std=1,random_state=np.random.RandomState(1))
+print(mdp.show())
+mu = MDPSimulator.generate_uniform_policy(mdp.X, mdp.U)
+gamma = 0.2
+num_samples = 10000
 
 P, R, R_std = MDPSolver.get_MRP(mdp, mu)
 
@@ -25,10 +25,17 @@ print("M2_exact={}".format(M2_exact))
 print(time.time() - start)
 
 trajectory = mdp.simulate(0, mu, num_samples=num_samples)
+#print(trajectory)
 start = time.time()
 J_td = MDPSolver.get_J_as_TD(trajectory=trajectory, gamma=gamma, X=mdp.X, alpha=10)
 print("J_td={}".format(J_td))
 print(time.time() - start)
+
+start = time.time()
+M2_MC_filt = MDPSolver.get_J_as_MC_filter(trajectory, gamma, X=mdp.X, func=lambda x:x*x)
+print("M2_MC_filt={}".format(M2_MC_filt))
+print(time.time() - start)
+
 
 if num_samples<=1001:
     start = time.time()
@@ -47,12 +54,6 @@ start = time.time()
 J_MC_filt = MDPSolver.get_J_as_MC_filter(trajectory, gamma, X=mdp.X)
 print("J_MC_filt={}".format(J_MC_filt))
 print(time.time() - start)
-
-start = time.time()
-M2_MC_filt = MDPSolver.get_J_as_MC_filter(trajectory, gamma, X=mdp.X, func=lambda x:x*x)
-print("M2_MC_filt={}".format(M2_MC_filt))
-print(time.time() - start)
-
 
 phi = np.random.normal(size=(mdp.X,mdp.X))
 class PhiClass:
@@ -82,9 +83,9 @@ V_exact_direct = MDPSolver.get_J(P, R_V_exact, gamma**2)
 print("V_exact_by_M_J={}".format(V_exact_by_M_J))
 print("V_exact_direct={}".format(V_exact_direct))
 
-
 start = time.time()
 w_sim = MDPSolver.get_simulation_J_LSTD(phi_class, trajectory, gamma)
 J_sim_LSTD = np.dot(phi_class.phi, w_sim)
 print("J_sim_LSTD={}".format(J_sim_LSTD))
 print(time.time() - start)
+

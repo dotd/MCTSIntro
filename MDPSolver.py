@@ -14,12 +14,6 @@ def get_J(P, R, gamma):
     J = np.dot(np.linalg.inv(np.identity(P.shape[0]) - gamma * P), R)
     return J
 
-def get_rm(P, R, gamma, J=None):
-    if J is None:
-        J = get_J(P,R,gamma)
-    rm = R*R + (2* gamma * R) * np.dor(P,J)
-    return rm
-
 def compute_reward_to_go(trajectory, idx_start, gamma):
     R = 0
     d = 1
@@ -88,5 +82,24 @@ def get_J_as_TD(trajectory, gamma, X, alpha):
 def get_exact_J_LSTD(phi, P, gamma, r):
     A = np.linalg.multi_dot([phi.T, np.identity(P.shape[0]) - gamma*P ,phi])
     b = np.dot(phi.T,r)
+    w = np.linalg.solve(A, b)
+    return w
+
+def get_V_by_J_M(J,M):
+    return M - J*J
+
+def get_simulation_J_LSTD(phi, trajectory, gamma):
+    '''
+    phi should be an instance of a class where is has a method get(x) which returns vector
+    '''
+    A = 0
+    b = 0
+    for k in range(len(trajectory)-1):
+        x = trajectory[k][0]
+        r = trajectory[k][2]
+        y = trajectory[k+1][0]
+        phi_x = phi.get(x)
+        A += np.outer(phi_x,phi_x - gamma * phi.get(y))
+        b += phi_x * r
     w = np.linalg.solve(A, b)
     return w

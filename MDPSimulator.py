@@ -23,7 +23,7 @@ class MDPSim:
         trajectory = []
         for n in range(num_samples):
             u = self.rand.choice(range(self.U), p=policy[x])
-            y = self.rand.choice(range(self.U), p=self.P[u,x])
+            y = self.rand.choice(range(self.X), p=self.P[u,x])
             r = self.R[u, x, y] + self.rand.normal()*self.R_std[u,x,y]
             trajectory.append([x,u,r])
             x = y
@@ -72,8 +72,6 @@ def ThreeDVec2OneDVec(R_mat, P, mu):
     U = R_mat.shape[0]
 
     R1D = np.zeros(shape=(X,))
-    M1D = np.zeros(shape=(X,))
-    std1D = np.zeros(shape=(X,))
     for x in range(X):
         for u in range(U):
             for y in range(X):
@@ -99,6 +97,11 @@ def get_R_M2(P, R, R_std, gamma, J):
     R_M2 = R*R + R_std * R_std + 2* gamma * R * (np.dot(P,J))
     return R_M2
 
+def get_R_V(P, R, R_std, gamma, J):
+    Jy = np.dot(P,J)
+    R_V = gamma*gamma * ( np.dot(P,J*J) - Jy * Jy) + R_std*R_std
+    return R_V
+
 def func1():
     mdp = generate_investment_sim()
     policy = generate_uniform_policy(mdp.X,mdp.U)
@@ -109,5 +112,38 @@ def func1():
     trajectory = mdp.simulate(x=0,policy=policy,num_samples=10)
     print(trajectory)
 
+def get_random_sparse_vector(X, B, to_normalize, type, random_state):
+    vec = np.zeros(shape=(X,))
+    if type=="gaussian":
+        vec[0:B] = random_state.normal(size=(B,))
+    else:
+        vec[0:B] = random_state.uniform(low=0, high=1.0, size=(B,))
 
+    if to_normalize:
+        sum_vec = np.sum(vec[0:B])
+        vec[0:B] = vec[0:B] / sum_vec
+
+    vec = random_state.permutation(vec)
+    return vec
+
+
+def generate_random_MDP(X, U, B, R_sparse, std = 0, random_state = np.random.RandomState(0)):
+    P = np.zeros(shape=(U,X,X))
+    R = np.zeros(shape=(U,X,X))
+    R_std = std*np.ones(shape=(U,X,X))
+
+    for u in range(U):
+        for x in range(X):
+            P[u, x] = get_random_sparse_vector(X, B, True, "uniform", random_state)
+            R[u, x] = get_random_sparse_vector(X, R_sparse, False, "gaussian", random_state)
+            R[u,x,:]  = R[u,x,0]
+        if u>=1:
+            R[u] = R[0]
+
+    mdp = MDPSim(P = P, R = R, R_std=R_std)
+    return mdp
+
+def func2():
+    mdp = generate_random_MDP(X=5,U=3,B=2,R_sparse=1)
+    print(mdp.show())
 
