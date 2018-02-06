@@ -6,13 +6,22 @@ class MDPSim:
     '''
     P, R, R_var are variance classes of sizes U*X*X
     '''
-    def __init__(self, P, R, R_std = 0, random = np.random.RandomState(0)):
+    def __init__(self, P, R, R_std = 0, random = np.random.RandomState(0), basis_size = None):
         self.P = P
         self.R = R
         self.R_std = R_std
         self.U = self.P.shape[0]
         self.X = self.P.shape[1]
         self.rand = random
+        self.cur_state = None
+        self.reset()
+        self.state_basis = None
+        if basis_size is not None:
+            self.set_basis(basis_size)
+
+    def reset(self):
+        self.cur_state = self.rand.randint(self.X)
+        return self.get_cur_state()
 
     def simulate(self, x, policy, num_samples):
         '''
@@ -29,6 +38,17 @@ class MDPSim:
             x = y
         return trajectory
 
+    def step(self,u):
+        x = self.cur_state
+        y = self.rand.choice(range(self.X), p=self.P[u, x])
+        r = self.R[u, x, y] + self.rand.normal()*self.R_std[u,x,y]
+        self.cur_state = y
+        if self.state_basis is None:
+            # Gym format
+            return y,r, None, None
+        else:
+            return self.state_basis[y],r, None, None
+
     def show(self):
         lines = []
         lines.append("P=")
@@ -38,6 +58,16 @@ class MDPSim:
         lines.append("R_std=")
         lines.append(show_3dMat(self.R_std))
         return "\n".join(lines)
+
+    def set_basis(self, basis_size):
+        self.state_basis = self.rand.normal(size=(self.X,basis_size))
+
+    def get_cur_state(self):
+        if self.state_basis is None:
+            return self.cur_state
+        else:
+            return self.state_basis[self.cur_state]
+
 
 
 def show_2dMat(mat, **kwargs):

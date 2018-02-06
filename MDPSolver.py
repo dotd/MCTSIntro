@@ -183,3 +183,4 @@ def VI(mdp, gamma, limit_loops = 100, theta = 1e-3):
     Q = get_Q(mdp, gamma, J)
     mu = get_policy_from_Q(Q)
     return J, mu, iter, delta
+
