@@ -32,12 +32,12 @@ print(time.time() - start)
 
 if num_samples<=1001:
     start = time.time()
-    J_MC = MDPSolver.get_J_as_MC(trajectory, gamma, X=mdp.X)
+    J_MC = MDPSolver.get_J_as_MC_raw(trajectory, gamma, X=mdp.X)
     print("J_MC={}".format(J_MC))
     print(time.time() - start)
 
     start = time.time()
-    M2_MC = MDPSolver.get_J_as_MC(trajectory, gamma, X=mdp.X, func=lambda x:x*x)
+    M2_MC = MDPSolver.get_J_as_MC_raw(trajectory, gamma, X=mdp.X, func=lambda x: x * x)
     print("M2_MC={}".format(M2_MC))
     print(time.time() - start)
 else:

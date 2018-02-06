@@ -93,6 +93,13 @@ def generate_uniform_policy(X,U):
     policy = np.ones(shape=(X,U))/U
     return policy
 
+def generate_deterministic_policy(X, U, random = np.random.RandomState(0)):
+    policy = np.zeros(shape=(X,U))
+    for x in range(X):
+        u = random.randint(0,U)
+        policy[x,u] = 1.0
+    return policy
+
 def get_R_M2(P, R, R_std, gamma, J):
     R_M2 = R*R + R_std * R_std + 2* gamma * R * (np.dot(P,J))
     return R_M2

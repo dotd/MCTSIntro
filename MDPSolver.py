@@ -14,6 +14,17 @@ def get_J(P, R, gamma):
     J = np.dot(np.linalg.inv(np.identity(P.shape[0]) - gamma * P), R)
     return J
 
+def get_J_iteratively(P, R, gamma, maximal_num_iters=10, maximal_eps=1e-3, norm = lambda x: np.linalg.norm(x)):
+    X = P.shape[0]
+    J = np.zeros(shape=(X,))
+    J_prev = J - 10*maximal_eps*X
+    iters_counter = 0
+    while norm(J-J_prev) > maximal_eps and iters_counter<maximal_num_iters:
+        J_prev = J
+        J = R + gamma * np.dot(P,J)
+        iters_counter +=1
+    return J, norm(J-J_prev), iters_counter
+
 def compute_reward_to_go(trajectory, idx_start, gamma):
     R = 0
     d = 1
@@ -22,7 +33,7 @@ def compute_reward_to_go(trajectory, idx_start, gamma):
         d *= gamma
     return R
 
-def get_J_as_MC(trajectory, gamma, X = None, func = lambda x: x):
+def get_J_as_MC_raw(trajectory, gamma, X = None, func = lambda x: x):
     if X is None:
         X = max(trajectory)+1
     times = np.zeros((X,))
@@ -103,3 +114,72 @@ def get_simulation_J_LSTD(phi, trajectory, gamma):
         b += phi_x * r
     w = np.linalg.solve(A, b)
     return w
+
+def get_Q(mdp, gamma, J):
+    Q = np.zeros(shape=(mdp.X, mdp.U))
+    for x in range(mdp.X):
+        for u in range(mdp.U):
+            for y in range(mdp.X):
+                Q[x,u] += mdp.P[u,x,y] * (mdp.R[u,x,y] + gamma * J[y])
+    return Q
+
+def get_J_from_maximal_Q(Q):
+    J = np.amax(Q, axis=1)
+    return J
+
+def get_policy_from_Q(Q):
+    mu = np.zeros_like(Q)
+    idx_max = np.argmax(Q, axis=1)
+    for idx_x, idx_maximal in enumerate(idx_max):
+        mu[idx_x, idx_maximal] = 1
+    return mu
+
+def PI(mdp, gamma):
+    mu = MDPSimulator.generate_deterministic_policy(mdp.X, mdp.U)
+    mu_prev = np.zeros_like(mu)
+    iter_counter = 0
+    J_collector = []
+    while np.array_equal(mu_prev, mu)==False:
+        P, R, R_std = get_MRP(mdp, mu)
+        J = get_J(P, R, gamma)
+        J_collector.append(J)
+        Q = get_Q(mdp, gamma, J)
+        mu_prev = mu
+        mu = get_policy_from_Q(Q)
+        iter_counter +=1
+    return mu, J_collector, Q, iter_counter
+
+def check_J_collector_monotone(J_collector, debug_print = False, limit_Js = 10, limit_dim = 10):
+    for i in range(len(J_collector)-1):
+        J0 = J_collector[i]
+        J1 = J_collector[i+1]
+        delta = (J1-J0)
+        deltaBoolean = delta<0
+        if debug_print:
+            print("J0:",J0[0:limit_dim])
+            print("J1:",J1[0:limit_dim])
+            print(delta[0:limit_dim])
+        if deltaBoolean.any():
+            return False
+    return True
+
+def VI(mdp, gamma, limit_loops = 100, theta = 1e-3):
+    J = np.zeros(mdp.X)
+    iter = 0
+    delta = 0
+    for iter in range(limit_loops):
+        delta = 0
+        for x in range(mdp.X):
+            v = J[x]
+            vec_u = np.zeros(mdp.U)
+            for u in range(mdp.U):
+                for y in range(mdp.X):
+                    vec_u[u] += mdp.P[u,x,y] * (mdp.R[u,x,y] + gamma * J[y])
+            # get the maximum
+            J[x] = np.amax(vec_u)
+            delta = max(delta, np.abs(J[x]-v))
+        if (delta<theta):
+            break
+    Q = get_Q(mdp, gamma, J)
+    mu = get_policy_from_Q(Q)
+    return J, mu, iter, delta
