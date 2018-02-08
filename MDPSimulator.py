@@ -6,7 +6,7 @@ class MDPSim:
     '''
     P, R, R_var are variance classes of sizes U*X*X
     '''
-    def __init__(self, P, R, R_std = 0, random = np.random.RandomState(0), basis_size = None):
+    def __init__(self, P, R, R_std = 0, random = np.random.RandomState(0), basis = None, info = {}):
         self.P = P
         self.R = R
         self.R_std = R_std
@@ -14,10 +14,11 @@ class MDPSim:
         self.X = self.P.shape[1]
         self.rand = random
         self.cur_state = None
+        self.basis = basis
+        if self.basis is not None:
+            self.D = self.basis.shape[1]
         self.reset()
-        self.state_basis = None
-        if basis_size is not None:
-            self.set_basis(basis_size)
+        self.info = info
 
     def reset(self):
         self.cur_state = self.rand.randint(self.X)
@@ -43,11 +44,11 @@ class MDPSim:
         y = self.rand.choice(range(self.X), p=self.P[u, x])
         r = self.R[u, x, y] + self.rand.normal()*self.R_std[u,x,y]
         self.cur_state = y
-        if self.state_basis is None:
+        if self.basis is None:
             # Gym format
             return y,r, None, None
         else:
-            return self.state_basis[y],r, None, None
+            return self.basis[y],r, None, None
 
     def show(self):
         lines = []
@@ -59,14 +60,11 @@ class MDPSim:
         lines.append(show_3dMat(self.R_std))
         return "\n".join(lines)
 
-    def set_basis(self, basis_size):
-        self.state_basis = self.rand.normal(size=(self.X,basis_size))
-
     def get_cur_state(self):
-        if self.state_basis is None:
+        if self.basis is None:
             return self.cur_state
         else:
-            return self.state_basis[self.cur_state]
+            return self.basis[self.cur_state]
 
 
 
@@ -164,7 +162,7 @@ def get_random_sparse_vector(X, B, to_normalize, type, random_state):
     return vec
 
 
-def generate_random_MDP(X, U, B, R_sparse, std = 0, random_state = np.random.RandomState(0)):
+def generate_random_MDP(X, U, B, R_sparse, std = 0, random_state = np.random.RandomState(0), basis = None):
     P = np.zeros(shape=(U,X,X))
     R = np.zeros(shape=(U,X,X))
     R_std = std*np.ones(shape=(U,X,X))
@@ -177,7 +175,9 @@ def generate_random_MDP(X, U, B, R_sparse, std = 0, random_state = np.random.Ran
         if u>=1:
             R[u] = R[0]
 
-    mdp = MDPSim(P = P, R = R, R_std=R_std)
+    if basis is not None:
+        basis = random_state.normal(size=(X, basis))
+    mdp = MDPSim(P = P, R = R, R_std=R_std, basis = basis)
     return mdp
 
 def func2():

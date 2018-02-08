@@ -16,9 +16,9 @@ class DQNAgent:
         self.epsilon_min = 0.01
         self.epsilon_decay = 0.995
         self.learning_rate = 0.001
-        self.model = self._build_model()
+        self.model = self.build_model()
 
-    def _build_model(self):
+    def build_model(self):
         # Neural Net for Deep-Q learning Model
         model = Sequential()
         model.add(Dense(24, input_dim=self.state_size, activation='relu'))

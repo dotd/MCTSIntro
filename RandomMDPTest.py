@@ -4,12 +4,12 @@ import numpy as np
 import copy
 import time
 
-X = 100
-U = 30
-B = 10
-R_sparse = 10
-DQN_basis_size = 10
-mdp = MDPSimulator.generate_random_MDP(X=X,U=U,B=B,R_sparse=R_sparse,std=1,random_state=np.random.RandomState(1), basis_size=DQN_basis_size)
+X = 10
+U = 3
+B = 5
+R_sparse = 5
+DQN_basis_size = 5
+mdp = MDPSimulator.generate_random_MDP(X=X,U=U,B=B,R_sparse=R_sparse,std=1,random_state=np.random.RandomState(1), basis=DQN_basis_size)
 if mdp.X<=5 and mdp.U<=5:
     print(mdp.show())
 
@@ -146,20 +146,22 @@ print("diff_J={}, diff_J_percentage={}".format(diff_J, diff_J_percentage))
 
 ##############################################################
 # DQN Way
-from DQNSolver import DQNAgent
-batch_size = 32
-EPISODES = 10
-agent = DQNAgent(DQN_basis_size, U)
-for e in range(EPISODES):
-    state  = mdp.reset()
-    for time in range(500):
-        # env.render()
-        action = agent.act(state)
-        next_state, reward, done, _ = mdp.step(action)
-        next_state = np.reshape(next_state, [1, -1])
-        agent.remember(state, action, reward, next_state, done)
-        state = next_state
-    if len(agent.memory) > batch_size:
-        agent.replay(batch_size)
+DQN_enable = True
+if DQN_enable:
+    from DQNSolver import DQNAgent
+    batch_size = 32
+    EPISODES = 10
+    agent = DQNAgent(DQN_basis_size, U)
+    for e in range(EPISODES):
+        state  = mdp.reset()
+        for time in range(500):
+            # env.render()
+            action = agent.act(state)
+            next_state, reward, done, _ = mdp.step(action)
+            next_state = np.reshape(next_state, [1, -1])
+            agent.remember(state, action, reward, next_state, done)
+            state = next_state
+        if len(agent.memory) > batch_size:
+            agent.replay(batch_size)
 
 

@@ -149,7 +149,7 @@ def PI(mdp, gamma):
         iter_counter +=1
     return mu, J_collector, Q, iter_counter
 
-def check_J_collector_monotone(J_collector, debug_print = False, limit_Js = 10, limit_dim = 10):
+def check_J_collector_monotone(J_collector, debug_print = False, limit_Js = 10, limit_dim = 10  ):
     for i in range(len(J_collector)-1):
         J0 = J_collector[i]
         J1 = J_collector[i+1]
