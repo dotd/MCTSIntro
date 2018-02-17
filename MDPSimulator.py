@@ -103,6 +103,8 @@ def ThreeDVec2OneDVec(R_mat, P, mu):
     for x in range(X):
         for u in range(U):
             for y in range(X):
+                if R_mat[u,x,y]!=0:
+                    qqq=0
                 R1D[x] += P[u,x,y] * mu[x,u] * R_mat[u,x,y]
     return R1D
 
